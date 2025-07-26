@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import math
 
 
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QGridLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
@@ -71,11 +71,44 @@ class IMUVisualizer(QWidget):
         self.start_button = QPushButton('Start')
         self.stop_button = QPushButton('Stop')
 
+        # Orientation + sensor data labels
+        self.pitch_label = QLabel("Pitch: ---")
+        self.roll_label = QLabel("Roll: ---")
+        self.yaw_label = QLabel("Yaw: ---")
+
+        self.ax_label = QLabel("ax: ---")
+        self.ay_label = QLabel("ay: ---")
+        self.az_label = QLabel("az: ---")
+
+        self.gx_label = QLabel("gx: ---")
+        self.gy_label = QLabel("gy: ---")
+        self.gz_label = QLabel("gz: ---")
+
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
+        
+
+        data_layout = QGridLayout()
+        data_layout.addWidget(self.pitch_label, 0, 0)
+        data_layout.addWidget(self.roll_label, 0, 1)
+        data_layout.addWidget(self.yaw_label, 0, 2)
+
+        data_layout.addWidget(self.ax_label, 1, 0)
+        data_layout.addWidget(self.ay_label, 1, 1)
+        data_layout.addWidget(self.az_label, 1, 2)
+
+        data_layout.addWidget(self.gx_label, 2, 0)
+        data_layout.addWidget(self.gy_label, 2, 1)
+        data_layout.addWidget(self.gz_label, 2, 2)
+
+        layout.addLayout(data_layout)
+
         layout.addWidget(self.start_button)
         layout.addWidget(self.stop_button)
+        
         self.setLayout(layout)
+
+        
 
         self.start_button.clicked.connect(self.start_serial)
         self.stop_button.clicked.connect(self.stop_serial)
@@ -125,10 +158,22 @@ class IMUVisualizer(QWidget):
             if len(parts) != 6:
                 return
             ax, ay, az = parts[0], parts[1], parts[2]
-            gz = parts[5]
+            gx, gy, gz = parts[3], parts[4], parts[5]
             
             pitch, roll, yaw = self.compute_orientation(ax, ay, az, gz)
             print(f"Pitch: {pitch:.2f}, Roll: {roll:.2f}, Yaw: {yaw:.2f}")
+
+            self.pitch_label.setText(f"Pitch: {pitch:.2f}")
+            self.roll_label.setText(f"Roll: {roll:.2f}")
+            self.yaw_label.setText(f"Yaw: {yaw:.2f}")
+
+            self.ax_label.setText(f"ax: {ax}")
+            self.ay_label.setText(f"ay: {ay}")
+            self.az_label.setText(f"az: {az}")
+
+            self.gx_label.setText(f"gx: {gx}")
+            self.gy_label.setText(f"gy: {gy}")
+            self.gz_label.setText(f"gz: {gz}")
             
             # Convert angles to rotation
             rotation = R.from_euler('xyz', [math.radians(pitch), math.radians(roll), math.radians(yaw)])
