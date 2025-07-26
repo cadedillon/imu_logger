@@ -1,0 +1,7 @@
+{
+  "arduino.useArduinoCli": true,
+  "arduino.path": "/opt/homebrew/bin", // or output of `which arduino-cli`
+  "arduino.commandPath": "arduino-cli",
+  "arduino.logLevel": "info",
+  "arduino.enableUSBDetection": true
+}
