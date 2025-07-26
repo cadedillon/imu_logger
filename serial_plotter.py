@@ -1,12 +1,14 @@
 import sys
 import serial
 import numpy as np
+import matplotlib.pyplot as plt
 import math
 
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QComboBox
+
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from PyQt5.QtCore import QTimer
 
 from scipy.spatial.transform import Rotation as R
@@ -36,12 +38,35 @@ class IMUVisualizer(QWidget):
         self.ax.set_xlabel('X (forward)')
         self.ax.set_ylabel('Y (left)')
         self.ax.set_zlabel('Z (up)')
+        
 
         # Initialize quiver arrows with dummy directions
         self.x_arrow = self.ax.quiver(0, 0, 0, 1, 0, 0, color='r', length=20, normalize=True)
         self.y_arrow = self.ax.quiver(0, 0, 0, 0, 1, 0, color='g', length=20, normalize=True)
         self.z_arrow = self.ax.quiver(0, 0, 0, 0, 0, 1, color='b', length=20, normalize=True)
 
+        # Set up 3d model dimensions
+        self.cube_vertices = np.array([
+            [-1, -1, -1],
+            [ 1, -1, -1],
+            [ 1,  1, -1],
+            [-1,  1, -1],
+            [-1, -1,  1],
+            [ 1, -1,  1],
+            [ 1,  1,  1],
+            [-1,  1,  1]
+        ]) * 4  # Scale cube size
+
+        self.cube_faces = [
+            [0, 1, 2, 3],
+            [4, 5, 6, 7],
+            [0, 1, 5, 4],
+            [2, 3, 7, 6],
+            [1, 2, 6, 5],
+            [0, 3, 7, 4]
+        ]
+
+        self.rendered_cube_patches = []
 
         self.start_button = QPushButton('Start')
         self.stop_button = QPushButton('Stop')
@@ -119,6 +144,20 @@ class IMUVisualizer(QWidget):
             self.x_arrow = self.ax.quiver(0, 0, 0, x_axis[0], x_axis[1], x_axis[2], color='r', length=20, normalize=True)
             self.y_arrow = self.ax.quiver(0, 0, 0, y_axis[0], y_axis[1], y_axis[2], color='g', length=20, normalize=True)
             self.z_arrow = self.ax.quiver(0, 0, 0, z_axis[0], z_axis[1], z_axis[2], color='b', length=20, normalize=True)
+
+            # Apply rotation to cube vertices
+            rotated_vertices = rotation.apply(self.cube_vertices)
+
+            # Remove previously drawn cube faces
+            for patch in self.rendered_cube_patches:
+                patch.remove()
+            self.rendered_cube_patches.clear()
+            
+            for face_indices in self.cube_faces:
+                face_coords = [rotated_vertices[i] for i in face_indices]
+                poly = Poly3DCollection([face_coords], facecolor='#CD7F32', edgecolor='k', alpha=0.4)
+                self.ax.add_collection3d(poly)
+                self.rendered_cube_patches.append(poly)
 
             self.canvas.draw()
         except Exception as e:
