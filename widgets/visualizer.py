@@ -31,7 +31,8 @@ class IMUVisualizer(QWidget):
         self.status_label = QLabel('<b>Status:</b> <span style="color:Tomato;">Disconnected</span>')
         self.timestamp_label = QLabel("Last update: ---")
         
-         # Orientation + sensor data labels
+        # Orientation + sensor data labels
+        
         self.pitch_label = QLabel("Pitch: ---")
         self.roll_label = QLabel("Roll: ---")
         self.yaw_label = QLabel("Yaw: ---")
@@ -44,10 +45,51 @@ class IMUVisualizer(QWidget):
         self.gy_label = QLabel("gy: ---")
         self.gz_label = QLabel("gz: ---")
 
+        data_label_style = """
+        QLabel {
+            color: #C0C0C0;
+            font-family: 'Menlo', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        """
+        self.pitch_label.setStyleSheet(data_label_style)
+        self.roll_label.setStyleSheet(data_label_style)
+        self.yaw_label.setStyleSheet(data_label_style)
+        self.ax_label.setStyleSheet(data_label_style)
+        self.ay_label.setStyleSheet(data_label_style)
+        self.az_label.setStyleSheet(data_label_style)
+        self.gx_label.setStyleSheet(data_label_style)
+        self.gy_label.setStyleSheet(data_label_style)
+        self.gz_label.setStyleSheet(data_label_style)
+        self.timestamp_label.setStyleSheet("color: #1E90FF; font-style: italic;")
+        self.status_label.setStyleSheet("color: #C0C0C0; font-weight: bold;")
         # Buttons for start/stop and export
         self.start_button = QPushButton('Start')
         self.stop_button = QPushButton('Stop')
         self.export_button = QPushButton('Export Data as CSV')
+
+        button_style = """
+        QPushButton {
+            background-color: #003366;
+            color: white;
+            border: 2px solid #CD7F32;
+            padding: 6px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background-color: #1E90FF;
+            border-color: #FFD700;
+        }
+        QPushButton:disabled {
+            background-color: #555;
+            border-color: #333;
+            color: #aaa;
+        }
+        """
+        self.start_button.setStyleSheet(button_style)
+        self.stop_button.setStyleSheet(button_style)
+        self.export_button.setStyleSheet(button_style)
 
         # Button functionality
         self.start_button.clicked.connect(self.start)
