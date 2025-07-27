@@ -1,18 +1,17 @@
 import sys
 import serial
 import numpy as np
-import matplotlib.pyplot as plt
 import math
+import csv
+import time
 
-
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QHBoxLayout, QGridLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel, QGridLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from PyQt5.QtCore import QTimer
 
 from scipy.spatial.transform import Rotation as R
-
 
 # --- Serial config ---
 SERIAL_PORT = '/dev/tty.usbmodemB081849903302'
@@ -28,6 +27,8 @@ class IMUVisualizer(QWidget):
         self.dt = 0.005  # 200hz
         self.yaw = 0.0
         self.prev_time = None
+        self.logging_active = False
+        self.log = []  # List of rows to write
 
         # --- UI setup ---
         self.canvas = FigureCanvas(Figure())
@@ -68,8 +69,15 @@ class IMUVisualizer(QWidget):
 
         self.rendered_cube_patches = []
 
+        self.status_label = QLabel('<b>Status:</b> <span style="color:Tomato;">Disconnected</span>')
+        self.timestamp_label = QLabel("Last update: ---")
+
         self.start_button = QPushButton('Start')
         self.stop_button = QPushButton('Stop')
+
+        self.export_button = QPushButton('Export Data as CSV')
+        self.export_button.setEnabled(False)
+        self.export_button.clicked.connect(self.export_log)
 
         # Orientation + sensor data labels
         self.pitch_label = QLabel("Pitch: ---")
@@ -85,8 +93,12 @@ class IMUVisualizer(QWidget):
         self.gz_label = QLabel("gz: ---")
 
         layout = QVBoxLayout()
+
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.timestamp_label)
+        layout.addWidget(self.export_button)
+
         layout.addWidget(self.canvas)
-        
 
         data_layout = QGridLayout()
         data_layout.addWidget(self.pitch_label, 0, 0)
@@ -108,8 +120,6 @@ class IMUVisualizer(QWidget):
         
         self.setLayout(layout)
 
-        
-
         self.start_button.clicked.connect(self.start_serial)
         self.stop_button.clicked.connect(self.stop_serial)
 
@@ -118,13 +128,32 @@ class IMUVisualizer(QWidget):
         try:
             self.ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
             self.timer.start(int(self.dt * 1000))
+            self.start_time = time.time()
+            self.flight_log = []
+            self.logging_active = True
+            self.export_button.setEnabled(False)
+            self.status_label.setText(f'<b>Status:</b> <span style="color:MediumSeaGreen;">Connected to {self.ser.port} | Logging: Active</span>')
         except Exception as e:
-            print(f"Serial error: {e}")
+            self.status_label.setText(f'<b>Status:</b> <span style="color:Tomato;">Failed to connect ({e})</span>')
 
     def stop_serial(self):
         self.timer.stop()
         if self.ser:
             self.ser.close()
+        self.logging_active = False
+        self.status_label.setText(f'<b>Status:</b> <span style="color:DodgerBlue;"> Disconnected from {self.ser.port} | Logging Stopped</span>')
+        self.export_button.setEnabled(True)
+
+    def export_log(self):
+        try:
+            with open('imu_log.csv', 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['timestamp', 'ax', 'ay', 'az', 'gx', 'gy', 'gz', 'pitch', 'roll', 'yaw'])
+                writer.writerows(self.log)
+            self.status_label.setText('<b>Status:</b> <span style="color:MediumSeaGreen;">Data exported to imu_log.csv</span>')
+            self.export_button.setEnabled(False)
+        except Exception as e:
+            self.status_label.setText(f'<b>Status:</b> <span style="color:Tomato;">Export failed ({e})</span>')
 
     def compute_orientation(self, ax, ay, az, gz):
         try:
@@ -149,6 +178,7 @@ class IMUVisualizer(QWidget):
 
     def update_plot(self):
         if not self.ser or not self.ser.in_waiting:
+            self.status_label.setText(f'<b>Status:</b> <span style="color:Tomato;">Disconnected ({e})</span>')
             return
 
         try:
@@ -159,9 +189,10 @@ class IMUVisualizer(QWidget):
                 return
             ax, ay, az = parts[0], parts[1], parts[2]
             gx, gy, gz = parts[3], parts[4], parts[5]
+
+            self.timestamp_label.setText(f"Last update: {time.strftime('%H:%M:%S')}")
             
             pitch, roll, yaw = self.compute_orientation(ax, ay, az, gz)
-            print(f"Pitch: {pitch:.2f}, Roll: {roll:.2f}, Yaw: {yaw:.2f}")
 
             self.pitch_label.setText(f"Pitch: {pitch:.2f}")
             self.roll_label.setText(f"Roll: {roll:.2f}")
@@ -205,6 +236,10 @@ class IMUVisualizer(QWidget):
                 self.rendered_cube_patches.append(poly)
 
             self.canvas.draw()
+
+            if self.logging_active:
+                timestamp = round((time.time() - self.start_time) * 1000)
+                self.log.append([timestamp, ax, ay, az, gx, gy, gz, pitch, roll, yaw])
         except Exception as e:
             print(f"Parse error: {e}")
 

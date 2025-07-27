@@ -21,3 +21,4 @@ dist/serial_plotter.app/Contents/_CodeSignature/CodeResources
 dist/serial_plotter.app/Contents/MacOS/serial_plotter
 dist/serial_plotter.app/Contents/Resources/icon-windowed.icns
 .DS_Store
+imu_log.csv
