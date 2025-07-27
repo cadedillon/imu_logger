@@ -6,9 +6,9 @@ from PyQt5.QtCore import QTimer
 
 # Application imports
 from widgets.render3d import Render3D
-from orientation_utils import OrientationUtils
-from logger import Logger
-from serial_handler import SerialHandler
+from utils.orientation_utils import OrientationUtils
+from utils.logger import Logger
+from utils.serial_handler import SerialHandler
 
 class IMUVisualizer(QWidget):
     def __init__(self):
