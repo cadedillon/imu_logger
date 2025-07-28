@@ -2,6 +2,8 @@ import numpy as np
 import math
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import matplotlib.image as mpimg
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from scipy.spatial.transform import Rotation as R
 
@@ -20,6 +22,25 @@ class Render3D(FigureCanvas):
         self.ax.set_ylabel('Y (left)')
         self.ax.set_zlabel('Z (up)')
         self.ax.view_init(elev=20, azim=-30)
+
+        # Load the logo image
+        logo_path = "assets/gladiator.png"  # Adjust path as needed
+        img = mpimg.imread(logo_path)
+        imagebox = OffsetImage(img, zoom=0.08)  # Adjust zoom as needed
+
+        # Create annotation box anchored to top-left
+        ab = AnnotationBbox(
+            imagebox,
+            (-0.75, 1.125),  # (x, y) in axes fraction coordinates
+            xycoords='axes fraction',
+            boxcoords="axes fraction",
+            frameon=False,
+            pad=0.0,
+            box_alignment=(0, 1)  # left-top alignment
+        )
+
+        # Add to 3D plot
+        self.ax.add_artist(ab)
 
         # Initialize quiver arrows with dummy directions
         self.x_arrow = self.ax.quiver(0, 0, 0, 1, 0, 0, color='r', length=20, normalize=True)
